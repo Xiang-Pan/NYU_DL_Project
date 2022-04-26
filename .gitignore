@@ -8,7 +8,7 @@ mmselfsup/
 **/__pycache__/
 *.py[cod]
 *$py.class
-outputs
+**/outputs
 
 # C extensions
 *.so
