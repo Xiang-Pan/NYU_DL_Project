@@ -1,12 +1,14 @@
 labeled_data/
+unlabeled_data/
 *.z*
 *.zip
 mae/
 mmselfsup/
 # Byte-compiled / optimized / DLL files
-__pycache__/
+**/__pycache__/
 *.py[cod]
 *$py.class
+outputs
 
 # C extensions
 *.so
