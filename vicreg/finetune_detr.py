@@ -10,7 +10,7 @@ from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 import transforms as T
 
 from dataset import LabeledDataset
-from engine import train_one_epoch, evaluate
+from engine_detr import train_one_epoch, evaluate
 from utils import init_distributed_mode, collate_fn
 
 
@@ -57,22 +57,37 @@ def get_transform(train):
         transforms.append(T.RandomHorizontalFlip(0.5))
     return T.Compose(transforms)
 
+from transformers import DetrFeatureExtractor, DetrForObjectDetection, DetrConfig
+import torch.nn as nn
+
+class DetrModel(nn.Module):
+    def __init__(self, num_classes=101):
+        super().__init__()
+        self.config = DetrConfig.from_pretrained("./config.json")
+        self.feature_extractor = DetrFeatureExtractor()
+        self.od_model = DetrForObjectDetection(self.config)
+    def forward(self, images, targets=None):
+        features = self.feature_extractor(images)
+        if targets is None:
+            predictions = self.od_model(features)
+        else:
+            predictions = self.od_model(features, targets)
+        return predictions
 
 def get_model(args, num_classes):
     # model = torchvision.models.detection.fasterrcnn_resnet50_fpn(pretrained=False, pretrained_backbone=False)
-    model = torch.hub.load('facebookresearch/detr:main', 'detr_resnet50', pretrained=False)
+    # model = torch.hub.load('facebookresearch/detr:main', 'detr_resnet50', pretrained=False)
+    # model.class_embed = torch.nn.Linear(in_features=256, out_features=101, bias=True)
+    model = DetrModel(num_classes=num_classes)
 
-    checkpoint = torch.load(args.exp_dir / 'resnet50.pth')
-    for key in list(checkpoint.keys()):
-        if "num_batches_tracked" not in key:
-            checkpoint["backbone.body." + key] = checkpoint[key]
-            del checkpoint[key]
-    model.load_state_dict(checkpoint, strict=False)
+    # checkpoint = torch.load(args.exp_dir / 'resnet50.pth')
+    # # keep the same
+    # for key in list(checkpoint.keys()):
+    #     if "num_batches_tracked" not in key:
+    #         checkpoint["backbone.body." + key] = checkpoint[key]
+    #         del checkpoint[key]
+    # model.load_state_dict(checkpoint, strict=False)
 
-    # get number of input features for the classifier
-    # in_features = model.roi_heads.box_predictor.cls_score.in_features
-    # replace the pre-trained head with a new one
-    # model.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
     return model
 
 

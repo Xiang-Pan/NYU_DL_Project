@@ -1,4 +1,4 @@
-start_epoch=65
+start_epoch=74
 run_epoch=10
 end_epoch=`expr ${start_epoch} + ${run_epoch}`
 cp -f ./vicreg/outputs/model_$start_epoch.pth ./vicreg/outputs/model.pth
@@ -14,4 +14,4 @@ python -m torch.distributed.launch --nproc_per_node=5 \
 --arch resnet50 \
 --epochs $end_epoch \
 --batch-size 1000 \
---base-lr 0.3 
+--base-lr 0.1
