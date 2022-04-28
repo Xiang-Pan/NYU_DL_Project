@@ -131,7 +131,11 @@ def main(args):
             x = x.cuda(gpu, non_blocking=True)
             y = y.cuda(gpu, non_blocking=True)
 
-            lr = adjust_learning_rate(args, optimizer, loader, step)
+            # fix base lr
+            lr = args.base_lr
+            for param_group in optimizer.param_groups:
+                param_group["lr"] = lr
+            # lr = adjust_learning_rate(args, optimizer, loader, step)
 
             optimizer.zero_grad()
             with torch.cuda.amp.autocast():

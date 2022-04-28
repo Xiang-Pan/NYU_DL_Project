@@ -1,6 +1,6 @@
 # NYU_DL_Project
 
-## Validation Results
+## Validation Results (Second Leaderboard)
 Averaged stats: model_time: 0.0410 (0.0452)  evaluator_time: 0.0083 (0.0090)  
 Accumulating evaluation results...  
 DONE (t=16.63s).  

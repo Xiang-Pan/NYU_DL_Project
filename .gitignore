@@ -9,6 +9,7 @@ mmselfsup/
 *.py[cod]
 *$py.class
 **/outputs
+**/detr/
 
 # C extensions
 *.so
