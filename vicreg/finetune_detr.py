@@ -64,10 +64,13 @@ class DetrModel(nn.Module):
     def __init__(self, num_classes=101):
         super().__init__()
         self.config = DetrConfig.from_pretrained("./config.json")
-        self.feature_extractor = DetrFeatureExtractor()
+        # self.feature_extractor = DetrFeatureExtractor()
         self.od_model = DetrForObjectDetection(self.config)
+        self.od_model.class_labels_classifier = nn.Linear(self.od_model.class_labels_classifier.in_features, num_classes)
+
     def forward(self, images, targets=None):
-        features = self.feature_extractor(images)
+        features = images
+        # features = self.feature_extractor(images)
         if targets is None:
             predictions = self.od_model(features)
         else:
