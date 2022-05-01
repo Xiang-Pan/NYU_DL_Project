@@ -74,7 +74,7 @@ class CocoEvaluator(object):
         for original_id, prediction in predictions.items():
             if len(prediction) == 0:
                 continue
-
+            # print(predictions) 
             boxes = prediction["boxes"]
             boxes = convert_to_xywh(boxes).tolist()
             scores = prediction["scores"].tolist()

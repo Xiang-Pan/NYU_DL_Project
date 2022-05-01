@@ -30,8 +30,6 @@ def train_one_epoch(args, model, optimizer, data_loader, device, epoch, stats_fi
 
         losses = model(images, targets)["loss"]
         loss_dict = {"detr_loss": losses}
-
-        # losses = sum(loss for loss in loss_dict.values())
         
         # reduce losses over all GPUs for logging purposes
         loss_dict_reduced = utils.reduce_dict(loss_dict)
@@ -99,12 +97,9 @@ def evaluate(model, data_loader, device):
 
         torch.cuda.synchronize()
         model_time = time.time()
-        model_outputs = model(images)
-        outputs = {"logits": model_outputs["logits"].cpu(), "boxes": model_outputs["pred_boxes"].cpu()}
-
-        # outputs = [{k: v.to(cpu_device) for k, v in t.items()} for t in outputs]
+        outputs = model(images)
+        outputs = [{k: v.to(cpu_device) for k, v in t.items()} for t in outputs]
         model_time = time.time() - model_time
-
         res = {target["image_id"].item(): output for target, output in zip(targets, outputs)}
         evaluator_time = time.time()
         coco_evaluator.update(res)

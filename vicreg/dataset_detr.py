@@ -183,11 +183,12 @@ class LabeledDataset(torch.utils.data.Dataset):
         target = {}
         target["boxes"] = boxes
         target["class_labels"] = labels
+        target["labels"] = labels
         target["image_id"] = image_id
         target["area"] = area
         target["iscrowd"] = iscrowd
 
-        # if self.transforms is not None:
-        #     img, target = self.transforms(img, target)
+        if self.transforms is not None:
+            img, target = self.transforms(img, target)
         
         return img, target

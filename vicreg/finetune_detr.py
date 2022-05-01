@@ -59,6 +59,7 @@ def get_transform(train):
     return T.Compose(transforms)
 
 from transformers import DetrFeatureExtractor, DetrForObjectDetection, DetrConfig
+from torchvision import transforms
 import torch.nn as nn
 
 class DetrModel(nn.Module):
@@ -72,50 +73,69 @@ class DetrModel(nn.Module):
         self.od_model = DetrForObjectDetection(self.config)
 
     def forward(self, images, targets=None):
+        tensor2img = torchvision.transforms.ToPILImage()
+        image_sizes = [torch.as_tensor(img.shape[-2:]) for img in images]
+        image_sizes = torch.stack(image_sizes).to(self.od_model.device)
+        images = [tensor2img(img) for img in images]
         labels = targets
         features = self.feature_extractor(images=images, return_tensors="pt")
         for k,v in features.items():
             features[k] = v.to(self.od_model.device)
 
         if targets is None:
+            # for inference
             outputs = self.od_model(**features)
+            outputs = self.feature_extractor.post_process(outputs, image_sizes)
         else:
             outputs = self.od_model(**features, labels=labels)
+
+
+            # outputs = {"logits": model_outputs["logits"].cpu(), "boxes": model_outputs["pred_boxes"].cpu()}
+            # print("outputs!!!!!!!!!!!!!!",outputs)
+
         return outputs
 
-def get_model(args, num_classes):
-    # model = torchvision.models.detection.fasterrcnn_resnet50_fpn(pretrained=False, pretrained_backbone=False)
-    # model = torch.hub.load('facebookresearch/detr:main', 'detr_resnet50', pretrained=False)
-    # model.class_embed = torch.nn.Linear(in_features=256, out_features=101, bias=True)
+def get_model(args, num_classes, load_epoch=0):
     model = DetrModel(num_classes=num_classes)
 
-    state_dict = torch.load(args.exp_dir / 'model_199.pth')
-    from collections import OrderedDict
-    new_state_dict = OrderedDict()
-    for k, v in state_dict.items():
-        new_name = k[7:]
-        new_state_dict[new_name] = state_dict[k]
-    model.load_state_dict(new_state_dict, strict=False)
-
+    load_resnet50 = False
+    if load_resnet50:
+        state_dict = torch.load(args.exp_dir / 'model_199.pth')
+        from collections import OrderedDict
+        new_state_dict = OrderedDict()
+        for k, v in state_dict.items():
+            new_name = k[7:]
+            new_state_dict[new_name] = state_dict[k]
+        model.load_state_dict(new_state_dict, strict=False)
+    else:
+        load_epoch = 0
+        state_dict = torch.load(args.exp_dir / f'detr_model_{load_epoch}.pth')
+        from collections import OrderedDict
+        new_state_dict = OrderedDict()
+        for k, v in state_dict.items():
+            new_name = k[7:]
+            new_state_dict[new_name] = state_dict[k]
+        model.load_state_dict(new_state_dict, strict=False)
     return model
 
 
-def train(args, model, optimizer, lr_scheduler, train_loader, valid_loader, device, start_epoch, stats_file):
+def train(args, model, optimizer, lr_scheduler, train_loader, valid_loader, device, start_epoch, stats_file, run_evaluate=False):
     start_time = last_logging_time = time.time()
     for epoch in range(start_epoch, args.epochs):
-        train_one_epoch(args, model, optimizer, train_loader, device, epoch, stats_file, start_time, last_logging_time)
+        if not run_evaluate:
+            train_one_epoch(args, model, optimizer, train_loader, device, epoch, stats_file, start_time, last_logging_time)
         # (model, optimizer, data_loader, device, epoch, print_freq=1):
         # train_one_epoch(model, optimizer, train_loader, device, epoch, last_logging_time)
         # lr_scheduler.step()
+ 
+        if not run_evaluate:
+            state = dict(
+                epoch=epoch + 1,
+                model=model.state_dict(),
+                optimizer=optimizer.state_dict(),
+            )       
+            torch.save(state, args.exp_dir / f"detr_model_{epoch}.pth")
 
-        state = dict(
-            epoch=epoch + 1,
-            model=model.state_dict(),
-            optimizer=optimizer.state_dict(),
-        )        
-        torch.save(state, args.exp_dir / f"detr_model_{epoch}.pth")
-
-        # if epoch % 2 == 0:
         evaluate(model, valid_loader, device=device)
 
 

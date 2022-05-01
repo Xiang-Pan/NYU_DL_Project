@@ -189,6 +189,8 @@ def convert_to_coco_api(ds):
                 ann['num_keypoints'] = sum(k != 0 for k in keypoints[i][2::3])
             dataset['annotations'].append(ann)
             ann_id += 1
+            # break
+        # break
     dataset['categories'] = [{'id': i} for i in sorted(categories)]
     coco_ds.dataset = dataset
     coco_ds.createIndex()
