@@ -10,7 +10,6 @@ from PIL import Image, ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 import torch
 
-
 class_dict = {
 'cup or mug': 0,
 'bird': 1,
@@ -183,12 +182,12 @@ class LabeledDataset(torch.utils.data.Dataset):
 
         target = {}
         target["boxes"] = boxes
-        target["labels"] = labels
+        target["class_labels"] = labels
         target["image_id"] = image_id
         target["area"] = area
         target["iscrowd"] = iscrowd
 
-        if self.transforms is not None:
-            img, target = self.transforms(img, target)
+        # if self.transforms is not None:
+        #     img, target = self.transforms(img, target)
         
         return img, target

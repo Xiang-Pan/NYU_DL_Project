@@ -18,28 +18,21 @@ def train_one_epoch(args, model, optimizer, data_loader, device, epoch, stats_fi
     header = 'Epoch: [{}]'.format(epoch)
 
     lr_scheduler = None
-    if epoch == 0:
-        warmup_factor = 1. / 1000
-        warmup_iters = min(1000, len(data_loader) - 1)
+    # if epoch == 0:
+        # warmup_factor = 1. / 1000
+        # warmup_iters = min(1000, len(data_loader) - 1)
 
-        lr_scheduler = utils.warmup_lr_scheduler(optimizer, warmup_iters, warmup_factor)
+        # lr_scheduler = utils.warmup_lr_scheduler(optimizer, warmup_iters, warmup_factor)
 
     for images, targets in metric_logger.log_every(data_loader, print_freq, header):
-        images = list(image.to(device) for image in images)
+        # images = list(image.to(device) for image in images)
         targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
 
-
-        # loss_dict = model(images, targets)
-
-        # loss_dict = criterion(outputs, targets)
-        # loss_dict = model(images, targets)
         losses = model(images, targets)["loss"]
-        loss_dict = {"loss": losses}
+        loss_dict = {"detr_loss": losses}
 
         # losses = sum(loss for loss in loss_dict.values())
         
-        
-
         # reduce losses over all GPUs for logging purposes
         loss_dict_reduced = utils.reduce_dict(loss_dict)
         losses_reduced = sum(loss for loss in loss_dict_reduced.values())

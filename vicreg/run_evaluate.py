@@ -39,17 +39,25 @@ def get_model(num_classes):
 
 def main():
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+    # device = torch.device('cuda:0')
 
     num_classes = 101
     # train_dataset = LabeledDataset(root='./labeled_data', split="training", transforms=get_transform(train=True))
     # train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=2, shuffle=True, num_workers=2, collate_fn=utils.collate_fn)
 
     valid_dataset = LabeledDataset(root='./labeled_data', split="validation", transforms=get_transform(train=False))
-    valid_loader = torch.utils.data.DataLoader(valid_dataset, batch_size=2, shuffle=False, num_workers=2, collate_fn=utils.collate_fn)
+    valid_loader = torch.utils.data.DataLoader(valid_dataset, batch_size=2, shuffle=False, num_workers=12, collate_fn=utils.collate_fn)
 
     model = get_model(num_classes)
     model.to(device)
-    model.load_state_dict(torch.load('./outputs/model.pth'))
+    state_dict = torch.load('./vicreg/outputs/model_199.pth')['model']
+    from collections import OrderedDict
+    new_state_dict = OrderedDict()
+    for k, v in state_dict.items():
+        name = k[7:] # remove `module.`
+        new_state_dict[name] = v
+    model.load_state_dict(new_state_dict)
+    model.to(device)
 
     evaluate(model, valid_loader, device=device)
     print("Evaluate!")

@@ -61,7 +61,7 @@ def get_transform(train):
 def get_model(args, num_classes):
     model = torchvision.models.detection.fasterrcnn_resnet50_fpn(pretrained=False, pretrained_backbone=False)
 
-    checkpoint = torch.load(args.exp_dir / 'resnet50.pth')
+    checkpoint = torch.load(args.exp_dir / 'model_199.pth')
     for key in list(checkpoint.keys()):
         if "num_batches_tracked" not in key:
             checkpoint["backbone.body." + key] = checkpoint[key]
@@ -126,10 +126,10 @@ def main(args):
     optimizer = torch.optim.SGD(params, lr=args.lr, momentum=args.momentum, weight_decay=args.wd)
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.1)
 
-    if (args.exp_dir / "model.pth").is_file():
+    if (args.exp_dir / "model_199.pth").is_file():
         if args.rank == 0:
             print("resuming from checkpoint")
-        start_epoch = 40
+        start_epoch = 199
         # ckpt = torch.load(args.exp_dir / "model.pth", map_location="cpu")
         # start_epoch = ckpt["epoch"]
         # model.load_state_dict(ckpt["model"])

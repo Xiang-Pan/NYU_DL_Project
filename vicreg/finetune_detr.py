@@ -9,7 +9,8 @@ from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 
 import transforms as T
 
-from dataset import LabeledDataset
+# from dataset import LabeledDataset
+from dataset_detr import LabeledDataset
 from engine_detr import train_one_epoch, evaluate
 from utils import init_distributed_mode, collate_fn
 
@@ -63,19 +64,24 @@ import torch.nn as nn
 class DetrModel(nn.Module):
     def __init__(self, num_classes=101):
         super().__init__()
-        self.config = DetrConfig.from_pretrained("./config.json")
-        # self.feature_extractor = DetrFeatureExtractor()
+        # self.config = DetrConfig.from_pretrained("./config.json")
+        self.config = DetrConfig()
+        self.config.auxiliary_loss = True
+        self.config.num_labels = num_classes
+        self.feature_extractor = DetrFeatureExtractor()
         self.od_model = DetrForObjectDetection(self.config)
-        self.od_model.class_labels_classifier = nn.Linear(self.od_model.class_labels_classifier.in_features, num_classes)
 
     def forward(self, images, targets=None):
-        features = images
-        # features = self.feature_extractor(images)
+        labels = targets
+        features = self.feature_extractor(images=images, return_tensors="pt")
+        for k,v in features.items():
+            features[k] = v.to(self.od_model.device)
+
         if targets is None:
-            predictions = self.od_model(features)
+            outputs = self.od_model(**features)
         else:
-            predictions = self.od_model(features, targets)
-        return predictions
+            outputs = self.od_model(**features, labels=labels)
+        return outputs
 
 def get_model(args, num_classes):
     # model = torchvision.models.detection.fasterrcnn_resnet50_fpn(pretrained=False, pretrained_backbone=False)
@@ -83,13 +89,13 @@ def get_model(args, num_classes):
     # model.class_embed = torch.nn.Linear(in_features=256, out_features=101, bias=True)
     model = DetrModel(num_classes=num_classes)
 
-    # checkpoint = torch.load(args.exp_dir / 'resnet50.pth')
-    # # keep the same
-    # for key in list(checkpoint.keys()):
-    #     if "num_batches_tracked" not in key:
-    #         checkpoint["backbone.body." + key] = checkpoint[key]
-    #         del checkpoint[key]
-    # model.load_state_dict(checkpoint, strict=False)
+    state_dict = torch.load(args.exp_dir / 'model_199.pth')
+    from collections import OrderedDict
+    new_state_dict = OrderedDict()
+    for k, v in state_dict.items():
+        new_name = k[7:]
+        new_state_dict[new_name] = state_dict[k]
+    model.load_state_dict(new_state_dict, strict=False)
 
     return model
 
@@ -100,17 +106,17 @@ def train(args, model, optimizer, lr_scheduler, train_loader, valid_loader, devi
         train_one_epoch(args, model, optimizer, train_loader, device, epoch, stats_file, start_time, last_logging_time)
         # (model, optimizer, data_loader, device, epoch, print_freq=1):
         # train_one_epoch(model, optimizer, train_loader, device, epoch, last_logging_time)
-        lr_scheduler.step()
+        # lr_scheduler.step()
 
         state = dict(
             epoch=epoch + 1,
             model=model.state_dict(),
             optimizer=optimizer.state_dict(),
         )        
-        torch.save(state, args.exp_dir / f"model_{epoch}.pth")
+        torch.save(state, args.exp_dir / f"detr_model_{epoch}.pth")
 
-        if epoch % 2 == 0:
-            evaluate(model, valid_loader, device=device)
+        # if epoch % 2 == 0:
+        evaluate(model, valid_loader, device=device)
 
 
 def main(args):
@@ -119,10 +125,10 @@ def main(args):
     print(args)
     gpu = torch.device(args.device)
 
-    stats_file = open(args.exp_dir / "stats.txt", "w", buffering=1)
+    stats_file = open(args.exp_dir / "detr_stats.txt", "w", buffering=1)
     if args.rank == 0:
         args.exp_dir.mkdir(parents=True, exist_ok=True)
-        stats_file = open(args.exp_dir / "stats.txt", "a", buffering=1)
+        stats_file = open(args.exp_dir / "detr_stats.txt", "a", buffering=1)
         print(" ".join(sys.argv))
         print(" ".join(sys.argv), file=stats_file)
     
@@ -142,13 +148,15 @@ def main(args):
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[gpu])
 
     params = [p for p in model.parameters() if p.requires_grad]
-    optimizer = torch.optim.SGD(params, lr=args.lr, momentum=args.momentum, weight_decay=args.wd)
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.1)
+    # optimizer = torch.optim.SGD(params, lr=args.lr, momentum=args.momentum, weight_decay=args.wd)
+    optimizer = torch.optim.Adam(params, lr=args.lr)
+    lr_scheduler = None
+    # lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.1)
 
     if (args.exp_dir / "model.pth").is_file():
         if args.rank == 0:
             print("resuming from checkpoint")
-        start_epoch = 40
+        start_epoch = 0
         # ckpt = torch.load(args.exp_dir / "model.pth", map_location="cpu")
         # start_epoch = ckpt["epoch"]
         # model.load_state_dict(ckpt["model"])

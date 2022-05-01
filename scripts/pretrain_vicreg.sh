@@ -1,5 +1,5 @@
-start_epoch=99
-run_epoch=10
+start_epoch=100
+run_epoch=100
 end_epoch=`expr ${start_epoch} + ${run_epoch}`
 cp -f ./vicreg/outputs/model_$start_epoch.pth ./vicreg/outputs/model.pth
 cp -f ./vicreg/outputs/resnet50_$start_epoch.pth ./vicreg/outputs/resnet50.pth
