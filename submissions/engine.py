@@ -64,6 +64,7 @@ def train_one_epoch(args, model, optimizer, data_loader, device, epoch, stats_fi
             print(json.dumps(stats))
             print(json.dumps(stats), file=stats_file)
             last_logging_time = current_time
+        sys.stdout.flush()
     return metric_logger
 
 
