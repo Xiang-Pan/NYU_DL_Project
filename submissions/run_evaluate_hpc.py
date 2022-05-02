@@ -51,7 +51,7 @@ def main():
     model.to(device)
     #model.load_state_dict(torch.load('/home/mk5636/model.pth'))
     #model.load_state_dict(torch.load('/home/mk5636/model.pth',  map_location=device)['model'])
-    state_dict = torch.load('./outputs/model_32.pth', map_location=device)["model"]
+    state_dict = torch.load('./outputs/model_46.pth', map_location=device)["model"]
     model.to(device)
     from collections import OrderedDict
     new_state_dict = OrderedDict()
