@@ -49,9 +49,7 @@ def main():
 
     model = get_model(num_classes)
     model.to(device)
-    #model.load_state_dict(torch.load('/home/mk5636/model.pth'))
-    #model.load_state_dict(torch.load('/home/mk5636/model.pth',  map_location=device)['model'])
-    state_dict = torch.load('./submissions/outputs/model_46.pth', map_location=device)["model"]
+    state_dict = torch.load('./submissions_with_full_code/outputs/model_46.pth', map_location=device)["model"]
     model.to(device)
     from collections import OrderedDict
     new_state_dict = OrderedDict()
