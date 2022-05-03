@@ -2,6 +2,10 @@
 Please use https://github.com/Xiang-Pan/NYU_DL_Project/blob/master/submissions/outputs/model_46.pth to download the model, and put the model in ./submissions/outputs/model_46.pth.
 
 ## How to Run
+### Main Script
+python ./submissions_with_full_code/run_evaluate_local.py
+
+
 ### Run it locally with GPU
 Please refer to https://github.com/Xiang-Pan/NYU_DL_Project/blob/master/scripts/evaluate.sh
 
