@@ -34,4 +34,4 @@ IoU metric: bbox
  Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.291
 
 
-## Detr (after 1 epoch)
+<!-- ## Detr (after 1 epoch) -->
